@@ -1,4 +1,4 @@
-.vtt
-.lrc
-.txt
-.bat
+*.vtt
+*.lrc
+*.txt
+*.bat
