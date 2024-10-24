@@ -17,8 +17,8 @@ def rmNum(lines):
         lines[idx] = new_elem
     return lines
 
-def isNum(line):
-    regex = r'^\d+$'
+def isTimeStamp(line):
+    regex = r'^\[\d{2}:\d{2}.\d{2}\]$'
     if re.match(regex,line):
         return True
     return False
@@ -56,10 +56,13 @@ def vtt2lrc(file):
 
     for idx, itm in enumerate(lines):
         if idx + 1 < len(lines):
-            if isNum(itm):
-                final_lines.append(lines[idx+1])
-            elif not(isNum(itm)) and not(isNum(lines[idx + 1])):
-                final_lines[-1] += lines[idx+1]
+            if isTimeStamp(itm):
+                final_lines.append(itm)
+            elif not(isTimeStamp(itm)) and not(isTimeStamp(lines[idx + 1])):
+                final_lines[-1] += itm
+        else:
+            final_lines[-1] += itm
+                
     final_lines = '\n'.join(final_lines)
         
     print(final_lines)
@@ -76,4 +79,3 @@ if __name__ == '__main__':
     for file in os.listdir():
         if file.endswith('.vtt'):
             vtt2lrc(file)
-    trashed_files = ['a','b']
