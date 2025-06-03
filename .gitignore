@@ -2,3 +2,7 @@
 *.lrc
 *.txt
 *.bat
+*.venv
+/build/
+/dist/
+*.spec
