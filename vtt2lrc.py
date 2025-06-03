@@ -12,13 +12,6 @@ def rmNextLine(lines):
         lines[idx] = new_elem
     return lines
 
-def rmNum(lines):
-    for idx, elem in enumerate(lines):
-        regex = r'^\d+$'
-        new_elem = re.sub(regex,'',elem)
-        lines[idx] = new_elem
-    return lines
-
 def isTimeStamp(line):
     regex = r'^\[\d{2}:\d{2}.\d{2}\]$'
     if re.match(regex,line):
@@ -81,7 +74,7 @@ def vtt2lrc(file):
     else:
         output_name, _ = os.path.splitext(file)
 
-    with open(f'{output_name}.lrc', 'a', encoding='utf-8') as f:
+    with open(f'{output_name}.lrc', 'w', encoding='utf-8') as f:
         f.write(final_lines + '\n')
 
     return output_name + '.lrc'
