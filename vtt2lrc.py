@@ -54,18 +54,19 @@ def vtt2lrc(file):
     # Reformat the way timestamp is represented in vtt to lrc 
     lines = reformatTime(lines)
     
-    final_lines = []
+    result = []
 
     for idx, itm in enumerate(lines):
         if idx + 1 < len(lines):
             if isTimeStamp(itm):
-                final_lines.append(itm)
-            elif not(isTimeStamp(itm)) and not(isTimeStamp(lines[idx + 1])):
-                final_lines[-1] += itm
+                result.append(itm)
+            # If the current line is not a timestamp but the previous line is, then it is a line of lyrics
+            elif not(isTimeStamp(itm)) and (isTimeStamp(lines[idx - 1])):
+                result[-1] += itm
         else:
-            final_lines[-1] += itm
+            result[-1] += itm
                 
-    final_lines = '\n'.join(final_lines)
+    result = '\n'.join(result)
         
     output_name = ''
     if '.wav.vtt' in file:
@@ -74,7 +75,7 @@ def vtt2lrc(file):
         output_name, _ = os.path.splitext(file)
 
     with open(f'{output_name}.lrc', 'w', encoding='utf-8') as f:
-        f.write(final_lines + '\n')
+        f.write(result + '\n')
 
     return output_name + '.lrc'
 
