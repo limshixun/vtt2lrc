@@ -41,7 +41,7 @@ def changeTimeFormat(time):
     # fill make sures that the result has at least 5 char, else pad with zeros
     SS = "{:.2f}".format(float(s)).zfill(5)
     return f'[{MM}:{SS}]'
- 
+
 def vtt2lrc(file):
     with open(file, 'r', encoding='utf-8') as f:
         lines = f.readlines()
@@ -51,7 +51,6 @@ def vtt2lrc(file):
     lines = list(filter(lambda x: x != '', lines))
     # Removes other constants
     lines = list(filter(lambda x: x != 'WEBVTT', lines))
-    lines = list(filter(lambda x: x != 'Telegram@djyqlfy', lines))
     # Reformat the way timestamp is represented in vtt to lrc 
     lines = reformatTime(lines)
     
@@ -83,18 +82,28 @@ def on_close():
     root.destroy()
     os._exit(0)
 
+def getAllVttFiles(folder, result=None):
+    if result is None:
+        result = []
+    for file in os.listdir(folder):
+        full_path = os.path.join(folder,file)
+        
+        if file.endswith('.vtt'):
+            output = vtt2lrc(full_path)
+            result.append(output)
+        elif os.path.isdir(full_path):
+            getAllVttFiles(full_path, result)
+            
+    return result
+
 def open_folder():
     folder = filedialog.askdirectory(title='Select Folder with .vtt Files in it')
+    print(folder)
     if not folder:
         return
-    
-    converted_files = []
-    for file in os.listdir(folder):
-        if file.endswith('.vtt'):
-            full_path = os.path.join(folder,file)
-            output = vtt2lrc(full_path)
-            converted_files.append(output)
 
+    converted_files = getAllVttFiles(folder)
+    
     if converted_files:
         print(converted_files)
         messagebox.showinfo("Done",f"Converted {len(converted_files)} .vtt files to .lrc:\n\n" + "\n".join(os.path.basename(f) for f in converted_files))
