@@ -2,7 +2,35 @@ import os
 import re
 import tkinter as tk
 from tkinter import filedialog, messagebox
+import json
+from pathlib import Path
+import sys
 
+ignore_phrases = []
+
+# Folder containing the .exe
+if getattr(sys, 'frozen', False):
+    EXE_DIR = Path(sys.executable).parent
+else:
+    EXE_DIR = Path(__file__).parent  # running from script
+
+IGNORE_FILE = EXE_DIR / "ignore_phrases.json"
+
+# Ensure file exists
+if not IGNORE_FILE.exists():
+    IGNORE_FILE.write_text("[]", encoding="utf-8")
+
+def loadIgnoreFile():
+    global ignore_phrases
+    if IGNORE_FILE.exists():
+        try:
+            with open(IGNORE_FILE,'r',encoding='utf-8') as f:
+                ignore_phrases = json.load(f)
+        except Exception:
+            ignore_phrases = []
+    else:
+        ignore_phrases = []
+    
 def rmNextLine(lines):
     for idx, elem in enumerate(lines):
         if '\n' in elem:
@@ -42,15 +70,17 @@ def changeTimeFormat(time):
     SS = "{:.2f}".format(float(s)).zfill(5)
     return f'[{MM}:{SS}]'
 
-def vtt2lrc(file):
-    with open(file, 'r', encoding='utf-8') as f:
+def vtt2lrc(tgt_file, folder):
+    with open(tgt_file, 'r', encoding='utf-8') as f:
         lines = f.readlines()
     # Removes all next line in between lines when read, return an array of lines without \n
     lines = rmNextLine(lines)
     # If the line before removing \n is only \n then, remove the line entirely as after removing \n, it is now a empty string in the array
     lines = list(filter(lambda x: x != '', lines))
+
     # Removes other constants
-    lines = list(filter(lambda x: x != 'WEBVTT', lines))
+    for phrase in ignore_phrases:
+        lines = list(filter(lambda x: x != phrase, lines))
     # Reformat the way timestamp is represented in vtt to lrc 
     lines = reformatTime(lines)
     
@@ -69,10 +99,10 @@ def vtt2lrc(file):
     result = '\n'.join(result)
         
     output_name = ''
-    if '.wav.vtt' in file:
-        output_name = file.replace('.wav.vtt','')
+    if '.wav.vtt' in tgt_file:
+        output_name = tgt_file.replace('.wav.vtt','')
     else:
-        output_name, _ = os.path.splitext(file)
+        output_name, _ = os.path.splitext(tgt_file)
 
     with open(f'{output_name}.lrc', 'w', encoding='utf-8') as f:
         f.write(result + '\n')
@@ -90,7 +120,7 @@ def getAllVttFiles(folder, result=None):
         full_path = os.path.join(folder,file)
         
         if file.endswith('.vtt'):
-            output = vtt2lrc(full_path)
+            output = vtt2lrc(full_path, folder)
             result.append(output)
         elif os.path.isdir(full_path):
             getAllVttFiles(full_path, result)
@@ -98,29 +128,45 @@ def getAllVttFiles(folder, result=None):
     return result
 
 def open_folder():
+    loadIgnoreFile()
     folder = filedialog.askdirectory(title='Select Folder with .vtt Files in it')
-    print(folder)
     if not folder:
         return
 
     converted_files = getAllVttFiles(folder)
     
     if converted_files:
-        print(converted_files)
         messagebox.showinfo("Done",f"Converted {len(converted_files)} .vtt files to .lrc:\n\n" + "\n".join(os.path.basename(f) for f in converted_files))
     else:
         messagebox.showinfo("No Files","No .vtt files found in the selected Folder")
 
+def open_ignore():
+    if not IGNORE_FILE.exists():
+        with open(IGNORE_FILE,'w',encoding='utf-8') as f:
+            f.write("[]")
+    try:
+        os.startfile(IGNORE_FILE)
+    except Exception:
+        print(f"Error: could not find {IGNORE_FILE}!")
+        
+
 # GUI setup
 root = tk.Tk()
 root.title("VTT to LRC Converter")
-root.geometry("300x150")
+root.geometry("300x200")
 root.protocol("WM_DELETE_WINDOW",on_close)
 
 label = tk.Label(root, text="Click to select a folder with .vtt files")
 label.pack(padx=10)
 
-btn = tk.Button(root, text="Select Folder", command=open_folder, height=2, width=20)
-btn.pack(pady=40)
+btn = tk.Button(root, text="Select Folder", command=open_folder, height=2, width=30)
+btn.pack(pady=20)
 
+label = tk.Label(root, text="Click to open/create an ignore phrase folder")
+label.pack(padx=10)
+
+btn = tk.Button(root, text="Open ignore_phrases.json ", command=open_ignore, height=2, width=30)
+btn.pack(pady=20)
+
+loadIgnoreFile()
 root.mainloop()
